@@ -1,7 +1,7 @@
-import { SorobanRpc } from "@stellar/stellar-sdk";
+import { rpc } from "@stellar/stellar-sdk";
 import { RPC_URL } from "./client";
 
-const server = new SorobanRpc.Server(RPC_URL);
+const server = new rpc.Server(RPC_URL);
 
 const MIN_BALANCE_THRESHOLD = 1; // 1 XLM
 
@@ -12,7 +12,8 @@ const MIN_BALANCE_THRESHOLD = 1; // 1 XLM
 export async function getXlmBalance(accountAddress: string): Promise<string> {
   try {
     const account = await server.getAccount(accountAddress);
-    const nativeBalance = account.balances.find((b) => b.asset_type === "native");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nativeBalance = (account as any).balances?.find((b: any) => b.asset_type === "native");
 
     if (!nativeBalance) {
       return "0";

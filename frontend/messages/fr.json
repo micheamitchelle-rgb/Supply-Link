@@ -1,0 +1,170 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "getStarted": "Commencer"
+  },
+  "hero": {
+    "badge": "Propulsé par Stellar et Soroban",
+    "title": "Chaînes d'approvisionnement transparentes,",
+    "titleHighlight": "Sur la blockchain",
+    "subtitle": "Enregistrez des produits, suivez chaque événement de la récolte à la vente, et permettez à quiconque de vérifier l'authenticité avec un scan QR — le tout sécurisé par les contrats intelligents Soroban.",
+    "cta": "Commencer",
+    "verify": "Vérifier un produit"
+  },
+  "journey": {
+    "harvest": "Récolte",
+    "processing": "Traitement",
+    "shipping": "Expédition",
+    "retail": "Vente"
+  },
+  "features": {
+    "heading": "Tout ce dont vous avez besoin",
+    "subheading": "Une boîte à outils complète pour les producteurs, les partenaires logistiques et les consommateurs.",
+    "registration": {
+      "title": "Enregistrement de produits",
+      "desc": "Enregistrez n'importe quel produit physique sur la blockchain avec un identifiant unique, une origine et des métadonnées."
+    },
+    "tracking": {
+      "title": "Suivi des événements",
+      "desc": "Enregistrez chaque événement de la chaîne d'approvisionnement — récolte, traitement, expédition, vente — avec des horodatages."
+    },
+    "qr": {
+      "title": "Vérification QR",
+      "desc": "Les consommateurs scannent un code QR pour vérifier instantanément l'authenticité et l'historique complet du produit."
+    },
+    "auth": {
+      "title": "Authentification multi-parties",
+      "desc": "Autorisez plusieurs acteurs par produit. Seules les parties approuvées peuvent ajouter des événements."
+    }
+  },
+  "howItWorks": {
+    "heading": "Comment ça fonctionne",
+    "subheading": "Quatre étapes de l'enregistrement à la vérification par le consommateur.",
+    "step1": {
+      "title": "Enregistrez votre produit",
+      "desc": "Connectez votre portefeuille Freighter et enregistrez un produit sur le contrat intelligent Soroban. Vous obtenez un identifiant unique sur la blockchain."
+    },
+    "step2": {
+      "title": "Autorisez les acteurs de la chaîne",
+      "desc": "Ajoutez des partenaires logistiques, des transformateurs et des détaillants comme acteurs autorisés pouvant enregistrer des événements."
+    },
+    "step3": {
+      "title": "Enregistrez les événements à chaque étape",
+      "desc": "Chaque acteur autorisé enregistre des événements (récolte, traitement, expédition, vente) avec la localisation et les métadonnées."
+    },
+    "step4": {
+      "title": "Les consommateurs vérifient avec le QR",
+      "desc": "Un code QR renvoie à l'historique complet sur la blockchain. N'importe qui peut vérifier l'authenticité sans portefeuille."
+    }
+  },
+  "useCases": {
+    "heading": "Conçu pour chaque industrie",
+    "subheading": "De la ferme à la pharmacie, Supply-Link s'adapte à toute chaîne d'approvisionnement physique.",
+    "food": {
+      "title": "Alimentation et boissons",
+      "desc": "Tracez les certifications biologiques, la conformité de la chaîne du froid et la provenance de la ferme à la table."
+    },
+    "pharma": {
+      "title": "Pharmaceutique",
+      "desc": "Assurez l'authenticité des médicaments, suivez les numéros de lot et prévenez les contrefaçons."
+    },
+    "fashion": {
+      "title": "Mode",
+      "desc": "Vérifiez l'approvisionnement éthique, les origines des matériaux et les certifications de commerce équitable."
+    },
+    "electronics": {
+      "title": "Électronique",
+      "desc": "Suivez les origines des composants, les lieux d'assemblage et les chaînes de garantie."
+    }
+  },
+  "cta": {
+    "heading": "Prêt à commencer ?",
+    "subheading": "Connectez votre portefeuille Freighter et enregistrez votre premier produit en moins d'une minute.",
+    "button": "Lancer l'application"
+  },
+  "footer": {
+    "copyright": "© {year} Supply-Link. Licence MIT."
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "totalProducts": "Total des produits",
+    "totalEvents": "Total des événements",
+    "activeProducts": "Produits actifs",
+    "last24h": "Dernières 24 h",
+    "eventsPerDay": "Événements par jour (30 derniers jours)",
+    "eventTypeDistribution": "Répartition par type d'événement",
+    "recentEvents": "Événements récents",
+    "noEvents": "Aucun événement pour l'instant.",
+    "product": "Produit",
+    "type": "Type",
+    "location": "Lieu",
+    "time": "Heure"
+  },
+  "verify": {
+    "notFound": {
+      "title": "Produit introuvable",
+      "desc": "Aucun produit avec cet ID n'existe sur ce réseau :",
+      "hint": "Le code QR est peut-être invalide ou le produit a été supprimé.",
+      "scanAnother": "Scanner un autre QR"
+    },
+    "origin": "Origine",
+    "registered": "Enregistré le",
+    "owner": "Propriétaire",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "verifiedBadge": "Vérifié sur Stellar · Voir le contrat",
+    "journey": "Parcours du produit",
+    "scanAnother": "Scanner un autre QR",
+    "communityRatings": "Avis de la communauté",
+    "noEvents": "Aucun événement enregistré pour ce produit.",
+    "eventTypes": {
+      "HARVEST": "Récolte",
+      "PROCESSING": "Traitement",
+      "SHIPPING": "Expédition",
+      "RETAIL": "Vente"
+    }
+  },
+  "ratings": {
+    "count": "{count, plural, =0 {Aucun avis pour le moment} one {# avis} other {# avis}}",
+    "leaveRating": "Laisser un avis",
+    "commentPlaceholder": "Ajouter un commentaire (facultatif, max. 500 caractères)",
+    "submitButton": "Envoyer l'avis",
+    "submitting": "Envoi...",
+    "connectPrompt": "Connectez votre portefeuille pour laisser un avis",
+    "connectWalletFirst": "Veuillez d'abord connecter votre portefeuille",
+    "selectRating": "Veuillez sélectionner une note",
+    "submitSuccess": "Avis envoyé avec succès",
+    "submitError": "Échec de l'envoi de l'avis"
+  },
+  "errors": {
+    "PRODUCT_NOT_FOUND": "Le produit demandé n'existe pas sur la chaîne.",
+    "NOT_AUTHORIZED": "Vous n'êtes pas autorisé à effectuer cette action sur ce produit.",
+    "APPROVER_NOT_AUTHORIZED": "L'approbateur n'est ni le propriétaire du produit ni un acteur autorisé.",
+    "OWNER_ONLY": "Seul le propriétaire du produit peut effectuer cette action.",
+    "NO_PENDING_EVENTS": "Il n'y a aucun événement en attente dans la file d'approbation pour ce produit.",
+    "PENDING_EVENT_EXPIRED": "Cet événement en attente a expiré et ne peut plus être approuvé.",
+    "INVALID_NONCE": "Le nonce fourni ne correspond pas à la valeur attendue. Actualisez et réessayez.",
+    "UNKNOWN": "Une erreur inattendue du contrat s'est produite. Veuillez réessayer."
+  },
+  "privateMetadata": {
+    "title": "Métadonnées privées",
+    "locked": "Ces métadonnées sont privées",
+    "lockedHint": "Seules les parties autorisées détenant la clé de déchiffrement peuvent les consulter. La provenance reste prouvée sur la chaîne.",
+    "onChainCommitment": "Engagement sur la chaîne",
+    "keyPlaceholder": "Collez la clé de déchiffrement",
+    "keyRequired": "Une clé de déchiffrement est requise.",
+    "decrypt": "Déchiffrer",
+    "decrypting": "Déchiffrement…",
+    "payloadUnavailable": "La charge chiffrée est indisponible.",
+    "commitmentMismatch": "La charge hors chaîne ne correspond pas à l'engagement sur la chaîne.",
+    "decryptFailed": "Échec du déchiffrement. Vérifiez que la clé est correcte.",
+    "verified": "Vérifié par rapport à l'engagement sur la chaîne",
+    "markPrivate": "Marquer les métadonnées comme privées",
+    "markPrivateHint": "Chiffre les métadonnées dans votre navigateur ; seul un engagement de hachage est stocké sur la chaîne.",
+    "submitSuccess": "Événement privé ajouté",
+    "saveKeyTitle": "Enregistrez votre clé de déchiffrement maintenant",
+    "saveKeyWarning": "Cette clé n'est affichée qu'une seule fois et n'est jamais envoyée au serveur. Quiconque la possède peut lire ces métadonnées ; sans elle, les données sont irrécupérables.",
+    "generatedKey": "Clé de déchiffrement",
+    "dismiss": "Terminé"
+  }
+}

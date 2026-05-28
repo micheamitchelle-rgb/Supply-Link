@@ -1,8 +1,26 @@
-export type EventType = "HARVEST" | "PROCESSING" | "SHIPPING" | "RETAIL";
+export type EventType = 'HARVEST' | 'PROCESSING' | 'SHIPPING' | 'RETAIL';
+export type ProductStatus = 'active' | 'inactive';
+
+export interface TemplateStage {
+  label: string;
+  eventType: EventType;
+}
+
+export type ActorRole = "Producer" | "Processor" | "Shipper" | "Retailer" | "Any";
 
 export interface OwnershipRecord {
   owner: string;
   transferredAt: number;
+}
+
+export interface ActorRoleAssignment {
+  actor: string;
+  role: ActorRole;
+}
+
+export interface AuthPolicy {
+  threshold: number;
+  roles: ActorRoleAssignment[];
 }
 
 export interface Product {
@@ -11,9 +29,32 @@ export interface Product {
   origin: string;
   owner: string;
   timestamp: number;
-  active: boolean;
+  active?: boolean;
   authorizedActors: string[];
   ownershipHistory?: OwnershipRecord[];
+  /** Unix seconds expiration timestamp. 0 = not set. (#406) */
+  expirationTimestamp?: number;
+  /** Whether the product has been marked as spoiled. (#406) */
+  spoiled?: boolean;
+  /** true while an on-chain transaction is in-flight */
+  pending?: boolean;
+}
+
+export interface Batch {
+  id: string;
+  name: string;
+  owner: string;
+  productIds: string[];
+  timestamp: number;
+  active: boolean;
+  status?: ProductStatus;
+  authorizedActors: string[];
+  ownershipHistory?: OwnershipRecord[];
+  /** Current lifecycle stage (#404) */
+  lifecycleStage?: LifecycleStage;
+  pending?: boolean;
+  /** Number of signatures required for events (0 or 1 = immediate, >1 = multi-sig) */
+  requiredSignatures?: number;
   /** true while an on-chain transaction is in-flight (#49) */
   pending?: boolean;
   /** Whether this product has been recalled (#393) */
@@ -24,6 +65,14 @@ export interface Product {
   recallTimestamp?: number;
   /** Schema version of this record (#392) */
   schemaVersion?: number;
+  /** Off-chain image URL stored in product metadata (#112) */
+  imageUrl?: string;
+  /** Taxonomy category ID (#425) */
+  category?: string;
+  /** Taxonomy subcategory ID (#425) */
+  subcategory?: string;
+  /** On-chain certifications attached to this product (#428) */
+  certifications?: Certification[];
 }
 
 export interface TrackingEvent {
@@ -33,8 +82,106 @@ export interface TrackingEvent {
   timestamp: number;
   eventType: EventType;
   metadata: string;
+  stableId?: string;
+  pending?: boolean;
+}
+
+/** Pending ownership transfer escrow (#396) */
+export interface TransferEscrow {
+  productId: string;
+  currentOwner: string;
+  proposedOwner: string;
+  requestedAt: number;
+  disputed: boolean;
+}
+
+/** Pending event awaiting multi-party approval (#394) */
+export interface PendingEvent {
+  productId: string;
+  submitter: string;
+  location: string;
+  eventType: EventType;
+  metadata: string;
+  submittedAt: number;
+  requiredApprovers: string[];
+  approvals: string[];
+  rejected: boolean;
+  expiresAt: number;
+}
+
+export interface EventPage {
+  events: TrackingEvent[];
+  /** Stable deterministic event ID — SHA-256 hex (#386) */
+  stableId?: string;
   /** true while an on-chain transaction is in-flight (#49) */
   pending?: boolean;
   /** Schema version of this record (#392) */
   schemaVersion?: number;
+}
+
+export interface EventPage {
+  events: TrackingEvent[];
+export interface PendingEvent {
+  pendingEventId: number;
+  productId: string;
+  event: TrackingEvent;
+  approvals: string[];
+  requiredSignatures: number;
+  createdAt: number;
+  expiration?: number;
+}
+
+export type NotificationType =
+  | 'TRACKING_EVENT'
+  | 'APPROVAL_PENDING'
+  | 'APPROVAL_FINALIZED'
+  | 'APPROVAL_REJECTED'
+  | 'OWNERSHIP_CHANGED'
+  | 'PRODUCT_RECALLED'
+  | 'CONTRACT_ERROR';
+
+export interface Notification {
+  id: string;
+  productId: string;
+  productName: string;
+  eventType: EventType;
+  location: string;
+  actor: string;
+  timestamp: number;
+  read: boolean;
+  notificationType: NotificationType;
+  message?: string;
+}
+
+export interface TransactionResult {
+  hash: string;
+  status: 'success' | 'failed' | 'pending';
+  fee: string;
+  timestamp: number;
+}
+
+export interface ContractError {
+  code: number;
+  message: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface EventFilter {
+  eventType?: EventType | null;
+  actor?: string | null;
+  fromTimestamp?: number | null;
+  toTimestamp?: number | null;
+export interface Rating {
+  id: string;
+  productId: string;
+  walletAddress: string;
+  stars: number;
+  comment: string | null;
+  timestamp: number;
 }

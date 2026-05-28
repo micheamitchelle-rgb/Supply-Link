@@ -1,10 +1,6 @@
-import {
-  getAddress,
-  isConnected,
-  signTransaction,
-} from "@stellar/freighter-api";
+import { isConnected, signTransaction, getAddress } from '@stellar/freighter-api';
 
-export type StellarNetwork = "testnet" | "mainnet";
+export type StellarNetwork = 'testnet' | 'mainnet';
 
 interface NetworkConfig {
   passphrase: string;
@@ -14,19 +10,19 @@ interface NetworkConfig {
 
 const NETWORKS: Record<StellarNetwork, NetworkConfig> = {
   testnet: {
-    passphrase: "Test SDF Network ; September 2015",
-    rpcUrl: "https://soroban-testnet.stellar.org",
-    name: "Testnet",
+    passphrase: 'Test SDF Network ; September 2015',
+    rpcUrl: 'https://soroban-testnet.stellar.org',
+    name: 'Testnet',
   },
   mainnet: {
-    passphrase: "Public Global Stellar Network ; September 2015",
-    rpcUrl: "https://soroban-mainnet.stellar.org",
-    name: "Mainnet",
+    passphrase: 'Public Global Stellar Network ; September 2015',
+    rpcUrl: 'https://soroban-mainnet.stellar.org',
+    name: 'Mainnet',
   },
 };
 
 const CURRENT_NETWORK: StellarNetwork =
-  (process.env.NEXT_PUBLIC_STELLAR_NETWORK as StellarNetwork) || "testnet";
+  (process.env.NEXT_PUBLIC_STELLAR_NETWORK as StellarNetwork) || 'testnet';
 
 const NETWORK_CONFIG = NETWORKS[CURRENT_NETWORK];
 
@@ -40,8 +36,8 @@ export function getNetworkName(): string {
 
 export class FreighterNotInstalledError extends Error {
   constructor() {
-    super("Freighter wallet extension is not installed");
-    this.name = "FreighterNotInstalledError";
+    super('Freighter wallet extension is not installed');
+    this.name = 'FreighterNotInstalledError';
   }
 }
 
@@ -54,9 +50,9 @@ export async function getWalletAddress(): Promise<string | null> {
   } catch (error) {
     if (
       error instanceof Error &&
-      (error.message.includes("Freighter") ||
-        error.message.includes("not installed") ||
-        error.message.includes("extension"))
+      (error.message.includes('Freighter') ||
+        error.message.includes('not installed') ||
+        error.message.includes('extension'))
     ) {
       throw new FreighterNotInstalledError();
     }
@@ -64,17 +60,14 @@ export async function getWalletAddress(): Promise<string | null> {
   }
 }
 
-export async function safeSignTransaction(
-  transaction: string
-): Promise<string> {
+export async function safeSignTransaction(transaction: string): Promise<string> {
   try {
     const result = await signTransaction(transaction);
     return result.signedTxXdr;
   } catch (error) {
     if (
       error instanceof Error &&
-      (error.message.includes("Freighter") ||
-        error.message.includes("not installed"))
+      (error.message.includes('Freighter') || error.message.includes('not installed'))
     ) {
       throw new FreighterNotInstalledError();
     }
@@ -85,12 +78,11 @@ export async function safeSignTransaction(
 export { signTransaction };
 
 export const CONTRACT_ID =
-  process.env.NEXT_PUBLIC_CONTRACT_ID ??
-  "CBUWSKT2UGOAXK4ZREVDJV5XHSYB42PZ3CERU2ZFUTUMAZLJEHNZIECA";
+  process.env.NEXT_PUBLIC_CONTRACT_ID ?? 'CBUWSKT2UGOAXK4ZREVDJV5XHSYB42PZ3CERU2ZFUTUMAZLJEHNZIECA';
 
 export const NETWORK_PASSPHRASE = NETWORK_CONFIG.passphrase;
 
-export const RPC_URL = NETWORK_CONFIG.rpcUrl;
+export const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL ?? NETWORK_CONFIG.rpcUrl;
 
 /**
  * Stub: call register_product on the Soroban contract.
@@ -101,9 +93,9 @@ export async function registerProduct(
   name: string,
   origin: string,
   description: string,
-  callerAddress: string
+  callerAddress: string,
 ): Promise<string> {
-  console.log("registerProduct", { productId, name, origin, description, callerAddress });
+  console.log('registerProduct', { productId, name, origin, description, callerAddress });
   // TODO: build + sign + submit Soroban transaction
   await new Promise((r) => setTimeout(r, 1200));
   return `mock_tx_${Date.now()}`;
@@ -114,9 +106,9 @@ export async function registerProduct(
  */
 export async function listProducts(
   page = 0,
-  pageSize = 20
-): Promise<{ products: import("../types").Product[]; total: number }> {
-  console.log("listProducts", { page, pageSize });
+  pageSize = 20,
+): Promise<{ products: import('../types').Product[]; total: number }> {
+  console.log('listProducts', { page, pageSize });
   await new Promise((r) => setTimeout(r, 800));
   return { products: [], total: 0 };
 }
@@ -128,9 +120,9 @@ export async function listProducts(
 export async function transferOwnership(
   productId: string,
   newOwner: string,
-  callerAddress: string
+  callerAddress: string,
 ): Promise<void> {
-  console.log("transferOwnership", { productId, newOwner, callerAddress });
+  console.log('transferOwnership', { productId, newOwner, callerAddress });
   // TODO: build + sign + submit Soroban transaction
   await new Promise((r) => setTimeout(r, 1000)); // simulate network delay
 }
@@ -142,9 +134,9 @@ export async function transferOwnership(
 export async function addAuthorizedActor(
   productId: string,
   actor: string,
-  callerAddress: string
+  callerAddress: string,
 ): Promise<void> {
-  console.log("addAuthorizedActor", { productId, actor, callerAddress });
+  console.log('addAuthorizedActor', { productId, actor, callerAddress });
   // TODO: build + sign + submit Soroban transaction
   await new Promise((r) => setTimeout(r, 1000)); // simulate network delay
 }
@@ -156,9 +148,48 @@ export async function addAuthorizedActor(
 export async function removeAuthorizedActor(
   productId: string,
   actor: string,
-  callerAddress: string
+  callerAddress: string,
 ): Promise<void> {
-  console.log("removeAuthorizedActor", { productId, actor, callerAddress });
+  console.log('removeAuthorizedActor', { productId, actor, callerAddress });
   // TODO: build + sign + submit Soroban transaction
   await new Promise((r) => setTimeout(r, 1000)); // simulate network delay
+}
+
+/**
+ * Stub: call delegate_actor_authority on the Soroban contract.
+ */
+export async function delegateActorAuthority(
+  productId: string,
+  delegatee: string,
+  expiresAt: number,
+  callerAddress: string,
+): Promise<void> {
+  console.log('delegateActorAuthority', { productId, delegatee, expiresAt, callerAddress });
+  // TODO: build + sign + submit Soroban transaction
+  await new Promise((r) => setTimeout(r, 1000));
+}
+
+/**
+ * Stub: call revoke_delegate on the Soroban contract.
+ */
+export async function revokeDelegate(
+  productId: string,
+  delegationId: number,
+  callerAddress: string,
+): Promise<void> {
+  console.log('revokeDelegate', { productId, delegationId, callerAddress });
+  // TODO: build + sign + submit Soroban transaction
+  await new Promise((r) => setTimeout(r, 1000));
+}
+
+/**
+ * Stub: call get_active_delegations on the Soroban contract.
+ */
+export async function getActiveDelegations(
+  productId: string,
+): Promise<import('../types').Delegation[]> {
+  console.log('getActiveDelegations', { productId });
+  // TODO: read from Soroban contract
+  await new Promise((r) => setTimeout(r, 500));
+  return [];
 }
