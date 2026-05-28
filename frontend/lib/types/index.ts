@@ -50,6 +50,9 @@ export interface Batch {
   status?: ProductStatus;
   authorizedActors: string[];
   ownershipHistory?: OwnershipRecord[];
+  /** Current lifecycle stage (#404) */
+  lifecycleStage?: LifecycleStage;
+  pending?: boolean;
   /** Number of signatures required for events (0 or 1 = immediate, >1 = multi-sig) */
   requiredSignatures?: number;
   /** true while an on-chain transaction is in-flight (#49) */
@@ -71,6 +74,35 @@ export interface TrackingEvent {
   timestamp: number;
   eventType: EventType;
   metadata: string;
+  stableId?: string;
+  pending?: boolean;
+}
+
+/** Pending ownership transfer escrow (#396) */
+export interface TransferEscrow {
+  productId: string;
+  currentOwner: string;
+  proposedOwner: string;
+  requestedAt: number;
+  disputed: boolean;
+}
+
+/** Pending event awaiting multi-party approval (#394) */
+export interface PendingEvent {
+  productId: string;
+  submitter: string;
+  location: string;
+  eventType: EventType;
+  metadata: string;
+  submittedAt: number;
+  requiredApprovers: string[];
+  approvals: string[];
+  rejected: boolean;
+  expiresAt: number;
+}
+
+export interface EventPage {
+  events: TrackingEvent[];
   /** Stable deterministic event ID — SHA-256 hex (#386) */
   stableId?: string;
   /** true while an on-chain transaction is in-flight (#49) */

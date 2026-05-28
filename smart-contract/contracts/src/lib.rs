@@ -123,6 +123,8 @@ pub struct Product {
     /// to the owner. Managed via [`SupplyLinkContract::add_authorized_actor`]
     /// and [`SupplyLinkContract::remove_authorized_actor`].
     pub authorized_actors: Vec<Address>,
+    /// Current lifecycle stage (#404)
+    pub lifecycle_stage: LifecycleStage,
     /// Whether the product is active. Deactivated products reject new events.
     /// Number of signatures required to approve events for this product.
     /// If 0 or 1, events are recorded immediately. If > 1, events are staged
@@ -491,6 +493,7 @@ impl SupplyLinkContract {
         product
     }
 
+    /// Add a tracking event for a product. Enforces lifecycle stage transitions (#404).
     /// Add a tracking event for a product.
     ///
     /// Appends a new [`TrackingEvent`] to the product's event log. The event
@@ -537,6 +540,8 @@ impl SupplyLinkContract {
         location: String,
         event_type: String,
         metadata: String,
+    ) -> TrackingEvent {
+        let mut product: Product = env
     ) -> Result<TrackingEvent, Error> {
         let product: Product = env
             .storage()
@@ -548,6 +553,7 @@ impl SupplyLinkContract {
             panic!("product is deactivated");
         }
 
+        let caller = product.owner.clone();
         // Verify caller is owner or an authorized actor before requiring auth
         let is_owner = product.owner == caller;
         let is_actor = product.authorized_actors.contains(&caller);
@@ -563,6 +569,19 @@ impl SupplyLinkContract {
 
         // Compute stable_id: SHA-256 of "product_id|event_type|timestamp" encoded as bytes
         let stable_id = compute_stable_id(&env, &product_id, &caller, &event_type, timestamp, &metadata);
+
+        // Enforce lifecycle transition (#404)
+        if !validate_lifecycle_transition(&env, &product.lifecycle_stage, &event_type) {
+            panic!("invalid lifecycle transition");
+        }
+
+        // Advance lifecycle stage if this event triggers a transition
+        if let Some(next_stage) = event_type_to_stage(&env, &event_type) {
+            product.lifecycle_stage = next_stage;
+            env.storage()
+                .persistent()
+                .set(&DataKey::Product(product_id.clone()), &product);
+        }
 
         let event = TrackingEvent {
             schema_version: EVENT_SCHEMA_VERSION,
@@ -930,6 +949,334 @@ o            actor: caller,
         Ok(true)
     }
 
+    // ── #404: Lifecycle helpers ───────────────────────────────────────────────
+
+    /// Get the current lifecycle stage of a product.
+    pub fn get_lifecycle_stage(env: Env, product_id: String) -> LifecycleStage {
+        let product: Product = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Product(product_id))
+            .expect("product not found");
+        product.lifecycle_stage
+    }
+
+    // ── #396: Ownership transfer escrow ──────────────────────────────────────
+
+    /// Request an ownership transfer. Creates an escrow pending acceptance.
+    pub fn request_transfer_ownership(
+        env: Env,
+        product_id: String,
+        proposed_owner: Address,
+    ) -> TransferEscrow {
+        let product: Product = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Product(product_id.clone()))
+            .expect("product not found");
+
+        if product.owner == proposed_owner {
+            panic!("proposed owner must differ from current owner");
+        }
+        product.owner.require_auth();
+
+        let escrow = TransferEscrow {
+            product_id: product_id.clone(),
+            current_owner: product.owner.clone(),
+            proposed_owner,
+            requested_at: env.ledger().timestamp(),
+            disputed: false,
+        };
+        env.storage()
+            .persistent()
+            .set(&DataKey::TransferEscrow(product_id.clone()), &escrow);
+
+        env.events().publish(
+            (Symbol::new(&env, "transfer_requested"), product_id),
+            escrow.clone(),
+        );
+        escrow
+    }
+
+    /// Accept a pending transfer. Proposed owner confirms and takes ownership.
+    pub fn accept_transfer_ownership(env: Env, product_id: String) -> bool {
+        let escrow: TransferEscrow = env
+            .storage()
+            .persistent()
+            .get(&DataKey::TransferEscrow(product_id.clone()))
+            .expect("no pending transfer");
+
+        if escrow.disputed {
+            panic!("transfer is disputed");
+        }
+
+        escrow.proposed_owner.require_auth();
+
+        let mut product: Product = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Product(product_id.clone()))
+            .expect("product not found");
+
+        product.owner = escrow.proposed_owner.clone();
+        env.storage()
+            .persistent()
+            .set(&DataKey::Product(product_id.clone()), &product);
+        env.storage()
+            .persistent()
+            .remove(&DataKey::TransferEscrow(product_id.clone()));
+
+        env.events().publish(
+            (Symbol::new(&env, "transfer_accepted"), product_id),
+            escrow.proposed_owner,
+        );
+        true
+    }
+
+    /// Cancel a pending transfer request (current owner only).
+    pub fn cancel_transfer_request(env: Env, product_id: String) -> bool {
+        let escrow: TransferEscrow = env
+            .storage()
+            .persistent()
+            .get(&DataKey::TransferEscrow(product_id.clone()))
+            .expect("no pending transfer");
+
+        escrow.current_owner.require_auth();
+        env.storage()
+            .persistent()
+            .remove(&DataKey::TransferEscrow(product_id.clone()));
+
+        env.events().publish(
+            (Symbol::new(&env, "transfer_cancelled"), product_id),
+            escrow.current_owner,
+        );
+        true
+    }
+
+    /// Dispute a pending transfer. Either party can raise a dispute.
+    pub fn dispute_transfer_ownership(env: Env, product_id: String) -> bool {
+        let mut escrow: TransferEscrow = env
+            .storage()
+            .persistent()
+            .get(&DataKey::TransferEscrow(product_id.clone()))
+            .expect("no pending transfer");
+
+        // Either current owner or proposed owner can dispute
+        let caller_is_owner = escrow.current_owner.clone();
+        caller_is_owner.require_auth();
+
+        escrow.disputed = true;
+        env.storage()
+            .persistent()
+            .set(&DataKey::TransferEscrow(product_id.clone()), &escrow);
+
+        env.events().publish(
+            (Symbol::new(&env, "transfer_disputed"), product_id),
+            escrow.current_owner,
+        );
+        true
+    }
+
+    /// Get the pending transfer escrow for a product, if any.
+    pub fn get_transfer_escrow(env: Env, product_id: String) -> Option<TransferEscrow> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::TransferEscrow(product_id))
+    }
+
+    // ── #394: Pending event approval queue ───────────────────────────────────
+
+    /// Submit an event for approval by required approvers.
+    /// The event is not committed to the event log until finalized.
+    pub fn submit_event_for_approval(
+        env: Env,
+        product_id: String,
+        submitter: Address,
+        location: String,
+        event_type: String,
+        metadata: String,
+        required_approvers: Vec<Address>,
+        ttl_seconds: u64,
+    ) -> PendingEvent {
+        let product: Product = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Product(product_id.clone()))
+            .expect("product not found");
+
+        let is_owner = product.owner == submitter;
+        let is_actor = product.authorized_actors.contains(&submitter);
+        if !is_owner && !is_actor {
+            panic!("submitter is not authorized");
+        }
+        submitter.require_auth();
+
+        let now = env.ledger().timestamp();
+        let pending = PendingEvent {
+            product_id: product_id.clone(),
+            submitter: submitter.clone(),
+            location,
+            event_type,
+            metadata,
+            submitted_at: now,
+            required_approvers,
+            approvals: Vec::new(&env),
+            rejected: false,
+            expires_at: now + ttl_seconds,
+        };
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::PendingEvent(product_id.clone(), submitter.clone()), &pending);
+
+        env.events().publish(
+            (Symbol::new(&env, "event_submitted"), product_id),
+            submitter,
+        );
+        pending
+    }
+
+    /// Approve a pending event. Approver must be in required_approvers.
+    pub fn approve_pending_event(
+        env: Env,
+        product_id: String,
+        submitter: Address,
+        approver: Address,
+    ) -> PendingEvent {
+        let mut pending: PendingEvent = env
+            .storage()
+            .persistent()
+            .get(&DataKey::PendingEvent(product_id.clone(), submitter.clone()))
+            .expect("no pending event");
+
+        if pending.rejected {
+            panic!("event already rejected");
+        }
+        if env.ledger().timestamp() > pending.expires_at {
+            panic!("pending event expired");
+        }
+        if !pending.required_approvers.contains(&approver) {
+            panic!("approver is not a required approver");
+        }
+        if pending.approvals.contains(&approver) {
+            panic!("already approved");
+        }
+
+        approver.require_auth();
+        pending.approvals.push_back(approver.clone());
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::PendingEvent(product_id.clone(), submitter.clone()), &pending);
+
+        env.events().publish(
+            (Symbol::new(&env, "event_approved"), product_id),
+            approver,
+        );
+        pending
+    }
+
+    /// Reject a pending event. Any required approver can reject.
+    pub fn reject_pending_event(
+        env: Env,
+        product_id: String,
+        submitter: Address,
+        approver: Address,
+    ) -> bool {
+        let mut pending: PendingEvent = env
+            .storage()
+            .persistent()
+            .get(&DataKey::PendingEvent(product_id.clone(), submitter.clone()))
+            .expect("no pending event");
+
+        if !pending.required_approvers.contains(&approver) {
+            panic!("approver is not a required approver");
+        }
+        approver.require_auth();
+
+        pending.rejected = true;
+        env.storage()
+            .persistent()
+            .set(&DataKey::PendingEvent(product_id.clone(), submitter.clone()), &pending);
+
+        env.events().publish(
+            (Symbol::new(&env, "event_rejected"), product_id),
+            approver,
+        );
+        true
+    }
+
+    /// Finalize a pending event once all required approvals are collected.
+    /// Commits the event to the product's event log.
+    pub fn finalize_pending_event(
+        env: Env,
+        product_id: String,
+        submitter: Address,
+    ) -> TrackingEvent {
+        let pending: PendingEvent = env
+            .storage()
+            .persistent()
+            .get(&DataKey::PendingEvent(product_id.clone(), submitter.clone()))
+            .expect("no pending event");
+
+        if pending.rejected {
+            panic!("event was rejected");
+        }
+        if env.ledger().timestamp() > pending.expires_at {
+            panic!("pending event expired");
+        }
+
+        // All required approvers must have approved
+        for i in 0..pending.required_approvers.len() {
+            let req = pending.required_approvers.get(i).unwrap();
+            if !pending.approvals.contains(&req) {
+                panic!("not all approvers have approved");
+            }
+        }
+
+        let event = TrackingEvent {
+            product_id: product_id.clone(),
+            location: pending.location,
+            actor: pending.submitter,
+            timestamp: env.ledger().timestamp(),
+            event_type: pending.event_type,
+            metadata: pending.metadata,
+        };
+
+        let mut events: Vec<TrackingEvent> = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Events(product_id.clone()))
+            .unwrap_or_else(|| Vec::new(&env));
+        events.push_back(event.clone());
+        env.storage()
+            .persistent()
+            .set(&DataKey::Events(product_id.clone()), &events);
+
+        // Remove the pending event
+        env.storage()
+            .persistent()
+            .remove(&DataKey::PendingEvent(product_id.clone(), submitter));
+
+        env.events().publish(
+            (Symbol::new(&env, "event_finalized"), product_id),
+            event.clone(),
+        );
+        event
+    }
+
+    /// Get a pending event by product_id and submitter.
+    pub fn get_pending_event(
+        env: Env,
+        product_id: String,
+        submitter: Address,
+    ) -> Option<PendingEvent> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::PendingEvent(product_id, submitter))
+    }
+}
+
     /// Revoke an address's permission to add tracking events for a product.
     ///
     /// Rebuilds `authorized_actors` without `actor`. Because
@@ -1075,6 +1422,14 @@ o            actor: caller,
         Ok(product)
     }
 
+    fn add_event(env: &Env, contract_id: &soroban_sdk::Address, product_id: &String) {
+        let client = SupplyLinkContractClient::new(env, contract_id);
+        // HARVEST is the only valid first event from Registered stage
+        client.add_tracking_event(
+            product_id,
+            &String::from_str(env, "Farm"),
+            &String::from_str(env, "HARVEST"),
+            &String::from_str(env, "{}"),
     /// Deactivate a product, preventing new events from being recorded.
     ///
     /// Sets `product.active` to `false`. Once deactivated, a product cannot
@@ -1224,6 +1579,80 @@ o            actor: caller,
         products
     }
 
+    /// Req 3.4 — multiple products each with one event → correct total
+    #[test]
+    fn test_multiple_events_returns_correct_count() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let contract_id = env.register_contract(None, SupplyLinkContract);
+        let client = SupplyLinkContractClient::new(&env, &contract_id);
+        let owner = soroban_sdk::Address::generate(&env);
+
+        // Register 5 separate products and add one HARVEST event each
+        for i in 0u32..5 {
+            let pid = {
+                let ids = ["pa", "pb", "pc", "pd", "pe"];
+                String::from_str(&env, ids[i as usize])
+            };
+            client.register_product(&pid, &String::from_str(&env, "W"), &String::from_str(&env, "O"), &owner);
+            client.add_tracking_event(&pid, &String::from_str(&env, "Farm"), &String::from_str(&env, "HARVEST"), &String::from_str(&env, "{}"));
+            assert_eq!(client.get_events_count(&pid), 1);
+        }
+    }
+
+    /// Req 3.5 — get_events_count == get_tracking_events(...).len()
+    #[test]
+    fn test_count_equals_vec_len() {
+        let (env, contract_id, product_id) = setup();
+        add_event(&env, &contract_id, &product_id);
+        let client = SupplyLinkContractClient::new(&env, &contract_id);
+        let count = client.get_events_count(&product_id);
+        let events = client.get_tracking_events(&product_id);
+        assert_eq!(count, events.len());
+    }
+
+    // ── Property-based tests ─────────────────────────────────────────────────
+
+    /// Property 1: Registered product with one HARVEST event has count == 1
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        #[test]
+        fn prop_count_equals_n_events(product_id_str in "[a-z]{1,20}") {
+            let env = Env::default();
+            env.mock_all_auths();
+            let contract_id = env.register_contract(None, SupplyLinkContract);
+            let client = SupplyLinkContractClient::new(&env, &contract_id);
+            let owner = soroban_sdk::Address::generate(&env);
+            let product_id = String::from_str(&env, &product_id_str);
+
+            client.register_product(
+                &product_id,
+                &String::from_str(&env, "Widget"),
+                &String::from_str(&env, "Origin"),
+                &owner,
+            );
+            prop_assert_eq!(client.get_events_count(&product_id), 0);
+
+            client.add_tracking_event(
+                &product_id,
+                &String::from_str(&env, "Farm"),
+                &String::from_str(&env, "HARVEST"),
+                &String::from_str(&env, "{}"),
+            );
+            prop_assert_eq!(client.get_events_count(&product_id), 1);
+        }
+    }
+
+    /// Property 2: Unknown product returns 0
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        #[test]
+        fn prop_unknown_product_returns_zero(product_id_str in "[a-z]{1,20}") {
+            let env = Env::default();
+            let contract_id = env.register_contract(None, SupplyLinkContract);
+            let client = SupplyLinkContractClient::new(&env, &contract_id);
+            let product_id = String::from_str(&env, &product_id_str);
+            prop_assert_eq!(client.get_events_count(&product_id), 0);
     // ── #388: Paginated event retrieval ───────────────────────────────────────
 
     /// Return a paginated slice of tracking events for a product.
@@ -1505,6 +1934,33 @@ o            actor: caller,
         true
     }
 
+    /// Property 3: After HARVEST, count increments by one
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        #[test]
+        fn prop_add_increments_count(product_id_str in "[a-z]{1,20}") {
+            let env = Env::default();
+            env.mock_all_auths();
+            let contract_id = env.register_contract(None, SupplyLinkContract);
+            let client = SupplyLinkContractClient::new(&env, &contract_id);
+            let owner = soroban_sdk::Address::generate(&env);
+            let product_id = String::from_str(&env, &product_id_str);
+
+            client.register_product(
+                &product_id,
+                &String::from_str(&env, "Widget"),
+                &String::from_str(&env, "Origin"),
+                &owner,
+            );
+            let count_before = client.get_events_count(&product_id);
+            client.add_tracking_event(
+                &product_id,
+                &String::from_str(&env, "Farm"),
+                &String::from_str(&env, "HARVEST"),
+                &String::from_str(&env, "{}"),
+            );
+            let count_after = client.get_events_count(&product_id);
+            prop_assert_eq!(count_after, count_before + 1);
     /// Revoke the role assignment for an actor on a product.
     ///
     /// # Authorization
@@ -1723,6 +2179,33 @@ fn compute_stable_id(
         Ok(true)
     }
 
+    /// Property 4: Count equals vec length
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100))]
+        #[test]
+        fn prop_count_equals_vec_len(product_id_str in "[a-z]{1,20}") {
+            let env = Env::default();
+            env.mock_all_auths();
+            let contract_id = env.register_contract(None, SupplyLinkContract);
+            let client = SupplyLinkContractClient::new(&env, &contract_id);
+            let owner = soroban_sdk::Address::generate(&env);
+            let product_id = String::from_str(&env, &product_id_str);
+
+            client.register_product(
+                &product_id,
+                &String::from_str(&env, "Widget"),
+                &String::from_str(&env, "Origin"),
+                &owner,
+            );
+            client.add_tracking_event(
+                &product_id,
+                &String::from_str(&env, "Farm"),
+                &String::from_str(&env, "HARVEST"),
+                &String::from_str(&env, "{}"),
+            );
+            let count = client.get_events_count(&product_id);
+            let events = client.get_tracking_events(&product_id);
+            prop_assert_eq!(count, events.len());
     /// Get pending events for a product.
     ///
     /// Returns all events awaiting multi-signature approval.
