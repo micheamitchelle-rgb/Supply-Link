@@ -6,9 +6,21 @@ export interface TemplateStage {
   eventType: EventType;
 }
 
+export type ActorRole = "Producer" | "Processor" | "Shipper" | "Retailer" | "Any";
+
 export interface OwnershipRecord {
   owner: string;
   transferredAt: number;
+}
+
+export interface ActorRoleAssignment {
+  actor: string;
+  role: ActorRole;
+}
+
+export interface AuthPolicy {
+  threshold: number;
+  roles: ActorRoleAssignment[];
 }
 
 export interface Product {
@@ -36,10 +48,14 @@ export interface TrackingEvent {
   timestamp: number;
   eventType: EventType;
   metadata: string;
+  /** Stable deterministic event ID — SHA-256 hex (#386) */
+  stableId?: string;
   /** true while an on-chain transaction is in-flight (#49) */
   pending?: boolean;
 }
 
+export interface EventPage {
+  events: TrackingEvent[];
 export interface PendingEvent {
   productId: string;
   event: TrackingEvent;
@@ -78,6 +94,11 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
+export interface EventFilter {
+  eventType?: EventType | null;
+  actor?: string | null;
+  fromTimestamp?: number | null;
+  toTimestamp?: number | null;
 export interface Rating {
   id: string;
   productId: string;
