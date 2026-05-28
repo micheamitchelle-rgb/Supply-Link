@@ -30,6 +30,8 @@ fn test_transfer_ownership_increments_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     assert_eq!(client.get_nonce(&owner), 0);
@@ -61,6 +63,8 @@ fn test_transfer_ownership_rejects_stale_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.add_authorized_actor(
@@ -94,6 +98,8 @@ fn test_transfer_ownership_rejects_future_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.transfer_ownership(
@@ -120,6 +126,8 @@ fn test_add_authorized_actor_increments_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     assert_eq!(client.get_nonce(&owner), 0);
@@ -152,6 +160,8 @@ fn test_add_authorized_actor_rejects_duplicate_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.add_authorized_actor(
@@ -184,6 +194,8 @@ fn test_remove_authorized_actor_increments_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.add_authorized_actor(
@@ -220,6 +232,8 @@ fn test_approve_event_increments_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &2,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.add_tracking_event(
@@ -259,6 +273,8 @@ fn test_approve_event_rejects_out_of_order_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &2,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.add_tracking_event(
@@ -293,6 +309,8 @@ fn test_reject_event_increments_nonce() {
         &String::from_str(&env, "Origin"),
         &owner,
         &2,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.add_tracking_event(
@@ -334,6 +352,8 @@ fn test_nonce_progression_multiple_operations() {
         &String::from_str(&env, "Origin"),
         &owner,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     assert_eq!(client.get_nonce(&owner), 0);
@@ -378,6 +398,8 @@ fn test_nonce_isolated_per_actor() {
         &String::from_str(&env, "Origin"),
         &owner1,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.register_product(
@@ -386,6 +408,8 @@ fn test_nonce_isolated_per_actor() {
         &String::from_str(&env, "Origin"),
         &owner2,
         &1,
+    );    &String::from_str(&env, "other"),
+    );    &String::from_str(&env, "general"),
     );
     
     client.transfer_ownership(

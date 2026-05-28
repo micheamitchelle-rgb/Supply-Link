@@ -1,5 +1,24 @@
-export type EventType = "HARVEST" | "PROCESSING" | "SHIPPING" | "RETAIL";
-export type ProductStatus = "active" | "inactive";
+export type EventType = 'HARVEST' | 'PROCESSING' | 'SHIPPING' | 'RETAIL';
+export type ProductStatus = 'active' | 'inactive';
+
+export interface Certification {
+  id: string;
+  productId: string;
+  certType: string;
+  issuer: string;
+  issuedAt: number;
+  revokedAt?: number;
+  revoked: boolean;
+}
+
+export interface SustainabilityMetadata {
+  carbon_footprint?: number;
+  certification_level?: 'none' | 'bronze' | 'silver' | 'gold' | 'platinum';
+  sustainable_practices?: string[];
+  water_usage?: number;
+  renewable_energy_pct?: number;
+  recyclable_packaging?: boolean;
+}
 
 export interface TemplateStage {
   label: string;
@@ -27,6 +46,12 @@ export interface Product {
   pending?: boolean;
   /** Off-chain image URL stored in product metadata (#112) */
   imageUrl?: string;
+  /** Taxonomy category ID (#425) */
+  category?: string;
+  /** Taxonomy subcategory ID (#425) */
+  subcategory?: string;
+  /** On-chain certifications attached to this product (#428) */
+  certifications?: Certification[];
 }
 
 export interface TrackingEvent {
@@ -61,7 +86,7 @@ export interface Notification {
 
 export interface TransactionResult {
   hash: string;
-  status: "success" | "failed" | "pending";
+  status: 'success' | 'failed' | 'pending';
   fee: string;
   timestamp: number;
 }
