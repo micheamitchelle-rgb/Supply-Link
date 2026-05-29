@@ -128,6 +128,9 @@ pub struct Product {
     pub recall_timestamp: u64,
     /// Schema version of this record (#392).
     pub schema_version: u32,
+    /// Hazard status (#454)
+    pub hazardous: bool,
+    pub hazard_classification: String,
 }
 
 #[contracttype]
@@ -444,6 +447,8 @@ impl SupplyLinkContract {
             active: true,
             category,
             subcategory,
+            hazardous: false,
+            hazard_classification: String::from_str(&env, ""),
         };
         env.storage()
             .persistent()
@@ -505,6 +510,8 @@ impl SupplyLinkContract {
                 recall_reason: String::from_str(&env, ""),
                 recall_timestamp: 0,
                 schema_version: SCHEMA_VERSION,
+                hazardous: false,
+                hazard_classification: String::from_str(&env, ""),
             };
             env.storage()
                 .persistent()
@@ -814,6 +821,26 @@ o            actor: caller,
             (Symbol::new(&env, "product_recalled"), product_id),
             product.recalled,
         );
+
+        true
+    }
+
+    /// Set hazard classification for a product (#454)
+    pub fn set_hazard_status(env: Env, product_id: String, hazardous: bool, classification: String) -> bool {
+        let mut product: Product = env
+            .storage()
+            .persistent()
+            .get(&DataKey::Product(product_id.clone()))
+            .expect("product not found");
+
+        product.owner.require_auth();
+
+        product.hazardous = hazardous;
+        product.hazard_classification = classification;
+
+        env.storage()
+            .persistent()
+            .set(&DataKey::Product(product_id), &product);
 
         true
     }

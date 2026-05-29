@@ -38,6 +38,8 @@ export interface Product {
   spoiled?: boolean;
   /** true while an on-chain transaction is in-flight */
   pending?: boolean;
+  hazardous?: boolean;
+  hazardClassification?: string;
 }
 
 export interface Batch {
