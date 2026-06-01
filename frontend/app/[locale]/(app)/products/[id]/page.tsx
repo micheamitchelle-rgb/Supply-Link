@@ -46,6 +46,16 @@ export default function ProductDetailPage({ params }: Props) {
         <ProductQRCode productId={p.id} size={160} />
       </div>
 
+      {p.hazardous && (
+        <section className="border border-red-200 bg-red-50 rounded-xl p-4 mb-6">
+          <div className="flex items-center gap-2 text-red-800">
+            <span className="text-xl">⚠️</span>
+            <h2 className="text-base font-bold">Hazardous Material</h2>
+          </div>
+          <p className="text-sm text-red-700 mt-1">Classification: {p.hazardClassification}</p>
+        </section>
+      )}
+
       {/* Product Fields */}
       <section className="border border-[var(--card-border)] bg-[var(--card)] rounded-xl p-6 mb-6">
         <h2 className="text-base font-semibold mb-4 text-[var(--foreground)]">Details</h2>

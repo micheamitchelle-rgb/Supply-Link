@@ -119,6 +119,12 @@ export default async function VerifyPage({ params }: Props) {
         <ProductQRCode productId={product.id} size={140} />
       </div>
 
+      {product.hazardous && (
+        <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 mr-3 rounded-full border border-red-200 bg-red-100 text-sm text-red-800 font-semibold">
+          ⚠️ Hazard Warning: {product.hazardClassification}
+        </div>
+      )}
+
       {/* Verified on Stellar badge */}
       <a
         href={stellarExpertUrl}
