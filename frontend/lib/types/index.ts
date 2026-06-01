@@ -90,7 +90,7 @@ export interface TemplateStage {
   eventType: EventType;
 }
 
-export type ActorRole = "Producer" | "Processor" | "Shipper" | "Retailer" | "Any";
+export type ActorRole = 'Producer' | 'Processor' | 'Shipper' | 'Retailer' | 'Any';
 
 export interface OwnershipRecord {
   owner: string;
@@ -122,10 +122,8 @@ export interface Product {
   spoiled?: boolean;
   /** true while an on-chain transaction is in-flight */
   pending?: boolean;
-  /** Provenance-based pricing metadata (#479) */
-  pricing?: ProductPricingMetadata;
-  /** Async validation status for the latest event (#475) */
-  validationStatus?: ValidationStatus;
+  hazardous?: boolean;
+  hazardClassification?: string;
 }
 
 export interface Batch {
@@ -271,13 +269,6 @@ export interface EventFilter {
   fromTimestamp?: number | null;
   toTimestamp?: number | null;
 }
-  id: string;
-  productId: string;
-  walletAddress: string;
-  stars: number;
-  comment: string | null;
-  timestamp: number;
-}
 
 export interface Rating {
   id: string;
@@ -286,4 +277,14 @@ export interface Rating {
   stars: number;
   comment: string | null;
   timestamp: number;
+}
+
+/** An off-chain document anchored on-chain by its SHA-256 hash. (#460) */
+export interface DocumentAnchor {
+  productId: string;
+  label: string;
+  /** Hex-encoded SHA-256 digest (64 chars). */
+  hash: string;
+  anchoredBy: string;
+  anchoredAt: number;
 }
